@@ -1,0 +1,218 @@
+---
+title: "Predicting Next Word - Milestone #1"
+author: "Enelen Brinshaw"
+output: html_document
+---
+***
+
+This is the first milestone for the Coursera Data Science Capstone conducted by John Hopkins University in partnership with Swiftkey. 
+
+## Loading Data
+Out of the four language corpuses given to us, I have knowledge regarding only English. So that is what I am going to use for now.
+
+```{r loading,eval=FALSE}
+twitter <- readLines("en_US.twitter.txt.bz2")
+blogs <- readLines("en_US.blogs.txt.bz2")
+news <- readLines("en_US.news.txt.bz2")
+```
+
+Each file is close to 200MB in size. The twitter file contains around 2.3 million lines, the blogs files contains 0.9 million lines, and the news file contains 1 million lines. Conducting analysis on this whole corpus would require very high computing power, the likes of which are unavailable with most individuals. Therefore I will take up a small random sample from each, which will hopefully be represntative of the whole. 
+
+## Sampling and Pre-processing
+```{r sampling,eval=FALSE}
+set.seed(1234) #for reproducibility
+sizeSample <- 0.05 #only taking 5% of the data.
+
+# creating samples for each dataset
+
+# sample of twitter
+ts <- sample(length(twitter),length(twitter)*sizeSample)
+twitSample <- twitter[ts]
+
+# sample of news
+ns <- sample(length(news),length(news)*sizeSample)
+newsSample <- news[ns]
+
+# sample of blogs
+bs <- sample(length(blogs),length(blogs)*sizeSample)
+blSample <- blogs[bs]
+```
+
+The data, like in most cases, requires cleaning. For instance, people use emoticons, which are not represented properly, and other characters (perhaps foreign ones). These all need to be cleaned as well.
+
+```{r ASCII conversion,eval = FALSE}
+# cleaning
+twitter <- iconv(twitSample,to = "ASCII",sub = "")
+blogs <- iconv(blSample,to = "ASCII",sub = "")
+news <- iconv(newsSample,to = "ASCII",sub = "")
+```
+The `iconv` command transforms text from one encoding to another(here everything was converted to ASCII characters), and the `sub` argument is used to define what should the characters not in the new encoding be substituted with. So essentially I have removed all non-ASCII characters from the three data sources.   
+
+Finally writing out these samples for future use.  
+```{r writeSample,eval=FALSE}
+# saving for easier future reading
+writeLines(twitSample,file("./Sample 5%/twitter.txt"))
+writeLines(newsSample,file("./Sample 5%/news.txt"))
+writeLines(blSample,file("./Sample 5%/blog.txt"))
+```
+
+
+## Creating Corpus
+Text mining in R can be done using a number of different libraries. The `tm` package is the most popular one, although it is also very slow. Searching on the internet and the Coursera forums lead me to the package `quanteda`, which is a fast and efficient library for text analysis which used `data.table` and `C++`. If the last 9 courses have taught me anything, it's that these two are always faster.
+
+```{r corpusInitial,eval = FALSE}
+require(quanteda)
+corpSource <- textfile("Sample 5%/*.txt")
+sampleCorpus <- corpus(corpSource)
+save(sampleCorpus,file = "combinedCorpusSample.Rdata") # saving for future use
+```
+
+```{r readCombined Corpus,echo=FALSE,results="hide",cache = TRUE}
+load("milestoneIncomplete.RData")
+```
+
+```{r load libraries,echo = FALSE,results = "hide",message=FALSE,warning=FALSE}
+require(quanteda)
+require(pander)
+require(ggplot2)
+panderOptions('big.mark',',')
+```
+
+
+Here's a brief summary of the sample corpus.   
+```{r summary,cache = TRUE,message = FALSE}
+require(pander)
+# creating summary to hide messages
+k <- summary(sampleCorpus)
+pander(k)
+```
+
+
+## Tokenisation
+Now to tokenise the text, i.e., to separate the words.  
+```{r tokenise,eval=FALSE}
+tokens <- tokenize(x = toLower(train),
+                      removePunct = TRUE,
+                      removeTwitter = TRUE,
+                      removeNumbers = TRUE,
+                      removeHyphens = TRUE,
+                      verbose = TRUE)
+```
+Numbers, punctuations, hyphens, twitter special characters (@#) were all removed, the corpus was converted to lower characters, and then tokenised.   
+
+```{r tokensSummary,cache = TRUE}
+pander(data.frame(Tokens = ntoken(tokensAll)))
+```
+
+
+
+## Profanity removal and Frequency Matrix
+
+One of our requirements was to remove profanity. In its simplest forms, this involves first creating a list of swear words, and then using that list to remove words from our Corpus, or replace them with some placeholder text.   
+
+There exist various sources online that have such lists. For example one such resource is [this](http://www.cs.cmu.edu/~biglou/resources/)(a list of almost 1300 bad words), another one is on [Shutterstock](https://github.com/shutterstock/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words). However, these contained a number of words that are not really swear words, for instance the first list contains words like "abuse,violence, arab", etc. One good list that I found was the list used by google which can be found [here](http://fffff.at/googles-official-list-of-bad-words/). It had the least amount of incorrect words in it (I only found "God").   
+
+```{r profanityFiltering,eval=FALSE}
+profane <- readLines("Profanity/google bad words.txt")
+
+# tokenising it since without it, the next step hangs up the computer for some reason
+profanity <- tokenize(profane,
+                      removePunct = TRUE,
+                      removeSeparators = TRUE,
+                      removeHyphens = TRUE,
+                      simplify = TRUE)
+```
+
+Now we could either remove those words, or put a placeholder text for them somthing like " @#$%&!" (grawlix). However, since we are supposed to be predicting the next word, we would not want to recommend "Use a swear word of your choice please...", which is why it is better to just remove all swear words altogether.      
+   
+   
+
+
+```{r removeProfanity,eval = FALSE}
+newTokens <- removeFeatures(tokensAll,profanity)
+```
+    
+   
+
+Let us now finally create a frequency matrix, which shows how many times a certain word appears.   
+
+
+```{r dfm,eval = FALSE}
+dfm1 <- dfm(newTokens,
+            stem = TRUE,
+            verbose = TRUE)
+dfm2 <- dfm(newTokens,
+            stem = TRUE,
+            ignoredFeatures = stopwords("english"),
+            verbose = TRUE)
+```
+
+The first command creates a data frequency matrix using using `dfm` command from the `quanteda` package. The `ignoredFeatures` argument is used to remove words from the Corpus. The first command removes the swear words. The second matrix has been created after removing stopwords (common words like "and,or, of, in, it", etc. which don't add much meaning to the text) to further analyse what were the most frequent words besides the most common words in the language. Stemming was used, which reduces different forms of words to their root words. For example, "tall","taller","tallest" are all reduced to just "tall".
+
+## Analyis
+
+The top 100 words can be easily visualised using a wordcloud, in which the size of the word represents its frequency.    
+
+
+```{r wordCloud,message = FALSE,fig.height=8,fig.width=11}
+require(RColorBrewer)
+# wordcloud including common words
+plot(dfm1,max.words = 100,
+     colors = brewer.pal(6,"Dark2"),
+     random.order = FALSE,
+     scale = c(8,1))
+
+# wordcloud excluding common words
+plot(dfm2,max.words = 100,
+     colors = brewer.pal(6,"Dark2"),
+     random.order = FALSE,use.r.layout = TRUE)
+```
+
+
+Here are the top 20 most frequent words.   
+
+```{r topFeatures,cache = TRUE}
+pander(t(data.frame(Freq = topfeatures(dfm1,20))),justify = "left",caption = "Including common words")
+pander(t(data.frame(Freq = topfeatures(dfm2,20))),justify = "left",caption = "Excluding common words")
+```
+
+    
+## n-gram models
+
+Let us also create a 3-gram model or a trigram, which can be later used for prediction applying the chain rule of probability. A trigram is a combination of 3 words that appear together. For instance "I am going". The n-gram will find every combination of `n` words that appear in our sample, and create a frequency matrix using that.   
+
+Going step by step, rather than putting everything directly in the `dfm` command really speeds up the process, which is why this approach was used (of separately tokenising, removing profanity, and creating trigrams).   
+
+
+```{r,eval = FALSE}
+trigrams <- ngrams(newTokens,n = 3)
+
+dfm3 <- dfm(trigrams,
+            stem = TRUE,
+            verbose = TRUE)
+bigrams <- ngrams(newTokens, n = 2)
+dfm4 <- dfm(bigrams,stem = TRUE,verbose = TRUE)
+```
+
+
+Let us now look at the top 20 trigrams with the highest frequency.   
+```{r trigramFreq,cache = TRUE}
+pander(data.frame(Freq = topfeatures(dfm3,20)),justify = "left")
+```
+
+Creating a barplot (also called frequency matrix) for the same.  
+```{r barPlot,fig.height=8,fig.width=11,cache = TRUE}
+require(ggplot2)
+temp <- topfeatures(dfm3,20)
+dat <- data.frame(freq = temp,gram = names(temp))
+
+ggplot(dat,aes(gram,freq)) + 
+     geom_bar(stat = "identity",fill = "steelblue") + 
+     scale_x_discrete(limits = dat$gram) + 
+     coord_flip() + 
+     labs(title = "Top trigrams in the sample dataset") +
+     theme(axis.text.y = element_text(size = 13,face = "italic"),
+           axis.text.x = element_text(size = 14),
+           axis.title = element_text(size = 16),
+           plot.title = element_text(size = 20))
+```

@@ -1,0 +1,2 @@
+download original dataset from this url and place it in this directory. And unzip the data as well.
+[https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip)
