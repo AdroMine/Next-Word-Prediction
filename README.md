@@ -15,3 +15,8 @@ For the code, to reproduce it you need to download the data in to the `original`
 - Then use `getNextWords.R` for the functions to predict next possible words based on our language models.
 
 The training, test and validation folders in the `code` directory are empty, and will be populated after running `Parition.R` (which can be run successfully after downloading original data)
+
+
+Here's the link to the two html files:
+- [App Pitch and Algorithm](https://adromine.github.io/Next-Word-Prediction/Presentation/NextWordPrediction-rpubs.html)
+- [Milestone1](https://adromine.github.io/Next-Word-Prediction/First%20Milestone/Milestone1.html)

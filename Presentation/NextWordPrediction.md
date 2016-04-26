@@ -3,23 +3,7 @@ Next Word Prediction
 author: Enelen Brinshaw
 date: 
 autosize: true
-<style type="text/css"> 
-p{
-     letter-spacing:0;
-}
-.reveal p {
-    line-height: 1.5em;
-    font-size: 28px
-}
-.reveal li {
-    letter-spacing:0;
-    line-height: 1.5em;
-    font-size: 28px
-}
-.reveal pre code {
-    font-size: 1.5em;
-}
-</style>
+
 
 Word Prediction App
 ========================================================

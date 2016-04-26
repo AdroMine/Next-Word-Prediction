@@ -1,0 +1,1 @@
+Here's the link to the html version of the presentation (gh-pages) [https://adromine.github.io/Next-Word-Prediction/Presentation/NextWordPrediction-rpubs.html](https://adromine.github.io/Next-Word-Prediction/Presentation/NextWordPrediction-rpubs.html).

@@ -1,0 +1,1 @@
+Here is the link to the html page (gh-pages) [https://adromine.github.io/Next-Word-Prediction/First%20Milestone/Milestone1.html](https://adromine.github.io/Next-Word-Prediction/First%20Milestone/Milestone1.html)
