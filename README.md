@@ -20,3 +20,5 @@ The training, test and validation folders in the `code` directory are empty, and
 Here's the link to the two html files:
 - [App Pitch and Algorithm](https://adromine.github.io/Next-Word-Prediction/Presentation/NextWordPrediction-rpubs.html)
 - [Milestone1](https://adromine.github.io/Next-Word-Prediction/First%20Milestone/Milestone1.html)
+
+And a link to the [app](https://enelen.shinyapps.io/Next-Word-Prediction/) itself 
